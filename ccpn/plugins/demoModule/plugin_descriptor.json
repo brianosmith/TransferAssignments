@@ -1,0 +1,22 @@
+{
+  "name": "My module [DEMO]",
+  "version": "0.0.1",
+  "author": "John Doe",
+  "entryPoint": "demoModule.plugin:MyCcpnModule",
+  "type": "",
+  "description": "A plugin to show a CCPN module",
+  "enabledByDefault": true,
+  "loadLevel": 3,
+  "menuTitle": "My Module",
+  "tags": [],
+  "menuIcon": "icn.png",
+
+  "_metadata": {
+    "jsonVersion": 3.0,
+    "className": "PluginDescriptor",
+    "classVersion": 1.0,
+    "user": "luca",
+    "lastPath": "",
+    "timestamp": "Thu Aug  7 13:21:42 2025"
+  }
+}
