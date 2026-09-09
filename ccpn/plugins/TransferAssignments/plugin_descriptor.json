@@ -1,0 +1,20 @@
+{
+  "name": "Transfer Assignments",
+  "version": "0.1.0",
+  "author": "Brian Smith",
+  "entryPoint": "TransferAssignments.plugin:TransferAssignmentsPlugin",
+  "type": "module",
+  "description": "Copy assignments between peak lists using CCPN V2-style matching",
+  "enabledByDefault": true,
+  "loadLevel": 3,
+  "menuTitle": "Transfer Assignments",
+  "tags": [
+    "Peak Assignment",
+    "Assignment Transfer"
+  ],
+  "_metadata": {
+    "jsonVersion": 3,
+    "className": "PluginDescriptor",
+    "classVersion": 1
+  }
+}
