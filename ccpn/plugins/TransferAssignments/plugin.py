@@ -71,11 +71,13 @@ class TransferAssignmentsGui(PluginGUIModule):
         )
 
         self.sourceTable = Table(
-            parent=self.splitter
+            parent=self.splitter,
+            callback=self._sourceTableSelection
         )
 
         self.targetTable = Table(
-            parent=self.splitter
+            parent=self.splitter,
+            callback=self._targetTableSelection
         )
 
         r += 1
@@ -120,26 +122,19 @@ class TransferAssignmentsGui(PluginGUIModule):
 
         for sourcePeak, matches in matchResults.items():
             rows.append({
-
-                '_object': sourcePeak,
-
-                '_peakPid': sourcePeak.pid,
-
                 'Serial': sourcePeak.serial,
-
                 'Assignment':
                     sourcePeak.annotation,
-
                 'Matches':
                     len(matches),
-
                 'Closest':
                     matches[0].distance
                     if matches else None,
-
                 'Best Match':
                     matches[0].targetPeak.serial
                     if matches else None,
+                '_object': sourcePeak,
+                '_peakPid': sourcePeak.pid,
             })
 
         df = pd.DataFrame(rows)
@@ -157,17 +152,12 @@ class TransferAssignmentsGui(PluginGUIModule):
 
         for match in peakMatches:
             rows.append({
-
                 '_object': match,
-
                 '_peakPid': match.targetPeak.pid,
-
                 'Serial':
                     match.targetPeak.serial,
-
                 'Assignment':
                     match.targetPeak.annotation,
-
                 'Distance':
                     round(match.distance, 4),
             })
@@ -313,31 +303,6 @@ class TransferAssignmentsGui(PluginGUIModule):
                 }
             ),
 
-            (
-                ASSIGN_SINGLE,
-                {
-                    'label': 'Assign Single',
-                    'type': compoundWidget.ButtonCompoundWidget,
-                    'callBack': self._assignSingle,
-                    'kwds': {
-                        'labelText': 'Action',
-                        'text': 'Assign Singly Matched',
-                    }
-                }
-            ),
-
-            (
-                ASSIGN_ALL,
-                {
-                    'label': 'Assign Closest',
-                    'type': compoundWidget.ButtonCompoundWidget,
-                    'callBack': self._assignClosest,
-                    'kwds': {
-                        'labelText': 'Action',
-                        'text': 'Assign All To Closest',
-                    }
-                }
-            ),
 
         ))
 
@@ -385,19 +350,19 @@ class TransferAssignmentsGui(PluginGUIModule):
 
     def _assignSelectedTarget(self):
 
-        if self._currentSourcePeak is None:
+        if self._selectedSourcePeak is None:
             return
 
-        if self._currentTargetPeak is None:
+        if self._selectedTargetPeak is None:
             return
 
         overwrite = (
-            self.overwriteCheckBox.isChecked()
+            self.getSettingsAsDict()[OVERWRITE]
         )
 
         AssignmentTransfer.copyAssignment(
-            self._currentSourcePeak,
-            self._currentTargetPeak,
+            self._selectedSourcePeak,
+            self._selectedTargetPeak,
             overwrite=overwrite
         )
 
@@ -408,7 +373,7 @@ class TransferAssignmentsGui(PluginGUIModule):
         count = (
             AssignmentTransfer.assignSinglyMatched(
                 self._matchResults,
-                overwrite=self._getOverwrite()
+                overwrite=self.getSettingsAsDict()[OVERWRITE]
             )
         )
 
@@ -421,7 +386,7 @@ class TransferAssignmentsGui(PluginGUIModule):
         count, unmatched = (
             AssignmentTransfer.assignAllToClosest(
                 self._matchResults,
-                overwrite=self._getOverwrite()
+                overwrite=self.getSettingsAsDict()[OVERWRITE]
             )
         )
 
