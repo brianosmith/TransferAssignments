@@ -12,6 +12,8 @@ from ccpn.ui.gui.widgets.Button import Button
 from ccpn.ui.gui.widgets.Frame import Frame
 from ccpn.ui.gui.widgets.Splitter import Splitter
 from ccpn.ui.gui.widgets.table.Table import Table
+from ccpn.ui.gui.widgets.CheckBox import CheckBox
+from ccpn.ui.gui.widgets.DoubleSpinbox import DoubleSpinbox
 
 from ccpn.api import getApplication, getLogger
 
@@ -41,6 +43,7 @@ class TransferAssignmentsGui(PluginGUIModule):
         self._selectedSourcePeak = None
         self._selectedTargetPeak = None
 
+        self._buildSettingsWidgets()
         self._buildResultsArea()
 
     def _buildResultsArea(self):
@@ -55,6 +58,15 @@ class TransferAssignmentsGui(PluginGUIModule):
         )
 
         r = 0
+
+        self.refreshButton = Button(
+            self.resultsFrame,
+            text='Refresh Matches',
+            callback=self._refreshMatches,
+            grid=(r,0)
+        )
+
+        r += 1
 
         self.statsLabel = Label(
             self.resultsFrame,
@@ -117,6 +129,78 @@ class TransferAssignmentsGui(PluginGUIModule):
             self._targetTableSelection
         )
 
+    def _buildSettingsWidgets(self):
+
+        row = 0
+
+        Label(
+            self.settingsWidget,
+            text='1H Scale',
+            grid=(row, 0)
+        )
+
+        self.hScaleSpinBox = DoubleSpinbox(
+            self.settingsWidget,
+            value=0.02,
+            grid=(row, 1)
+        )
+
+        row += 1
+
+        Label(
+            self.settingsWidget,
+            text='15N Scale',
+            grid=(row, 0)
+        )
+
+        self.nScaleSpinBox = DoubleSpinbox(
+            self.settingsWidget,
+            value=0.2,
+            grid=(row, 1)
+        )
+
+        row += 1
+
+        Label(
+            self.settingsWidget,
+            text='13C Scale',
+            grid=(row, 0)
+        )
+
+        self.cScaleSpinBox = DoubleSpinbox(
+            self.settingsWidget,
+            value=0.2,
+            grid=(row, 1)
+        )
+
+        row += 1
+
+        self.overwriteCheckBox = CheckBox(
+            self.settingsWidget,
+            checked=False,
+            grid=(row, 1)
+        )
+
+        Label(
+            self.settingsWidget,
+            text='Overwrite Assignments',
+            grid=(row, 0)
+        )
+
+        row += 1
+
+        self.onlyGoodCheckBox = CheckBox(
+            self.settingsWidget,
+            checked=True,
+            grid=(row, 1)
+        )
+
+        Label(
+            self.settingsWidget,
+            text='Only Good Matches',
+            grid=(row, 0)
+        )
+
     def updateSourceTable(self, matchResults):
         rows = []
 
@@ -152,14 +236,14 @@ class TransferAssignmentsGui(PluginGUIModule):
 
         for match in peakMatches:
             rows.append({
-                '_object': match,
-                '_peakPid': match.targetPeak.pid,
                 'Serial':
                     match.targetPeak.serial,
                 'Assignment':
                     match.targetPeak.annotation,
                 'Distance':
                     round(match.distance, 4),
+                '_object': match,
+                '_peakPid': match.targetPeak.pid
             })
 
         df = pd.DataFrame(rows)
@@ -187,6 +271,8 @@ class TransferAssignmentsGui(PluginGUIModule):
             []
         )
 
+        #TODO clear marks and mark and focus display(s) on self._selectedSourcePeak
+
         self._populateTargetTable(matches)
 
         self.application.current.peaks = [
@@ -211,10 +297,13 @@ class TransferAssignmentsGui(PluginGUIModule):
             peakMatch.targetPeak
         )
 
+
         self.application.current.peaks = [
             self._selectedSourcePeak,
             self._selectedTargetPeak
         ]
+
+        #TODO clear marks and mark self._selectedSourcePeak and self._selectedTargetPeak
 
     def _updateStatistics(self):
         total = len(self._matchResults)
@@ -236,6 +325,8 @@ class TransferAssignmentsGui(PluginGUIModule):
 
 
     def getWidgetDefinitions(self):
+        '''The settings for the widgets that appear at the top of the module. Currently no management of the layout
+        Plugin automatic construction style'''
 
         return od((
 
@@ -279,32 +370,11 @@ class TransferAssignmentsGui(PluginGUIModule):
                         'value': 0.1,
                     }
                 }
-            ),
-
-            (
-                OVERWRITE,
-                {
-                    'label': 'Overwrite',
-                    'type': compoundWidget.CheckBoxCompoundWidget,
-                    'kwds': {
-                        'labelText': 'Overwrite assignments'
-                    }
-                }
-            ),
-
-            (
-                ONLY_GOOD,
-                {
-                    'label': 'Only Good',
-                    'type': compoundWidget.CheckBoxCompoundWidget,
-                    'kwds': {
-                        'labelText': 'Only good matches'
-                    }
-                }
-            ),
+            ))
+        )
 
 
-        ))
+
 
     def _peakListsChanged(self, *args):
 
@@ -314,6 +384,11 @@ class TransferAssignmentsGui(PluginGUIModule):
         self.targetPeakList = self.project.getByPid(settings[TARGET_PEAKLIST])
 
         self._updateMatches()
+
+    def _refreshMatches(self, *args):
+
+        self._updateMatches()
+
 
     def _calculateMatches(self):
         if not self.sourcePeakList or not self.targetPeakList:
@@ -325,11 +400,17 @@ class TransferAssignmentsGui(PluginGUIModule):
             self.getSettingsAsDict()[DISTANCE_THRESHOLD]
         )
 
+        scales = {
+            '1H': self.hScaleSpinBox.get(),
+            '15N': self.nScaleSpinBox.get(),
+            '13C': self.cScaleSpinBox.get(),
+        }
+
         return self.plugin.matchEngine.findMatches(
                 self.sourcePeakList,
                 self.targetPeakList,
                 isotopeCodes,
-                scales=None #TODO make user settable self._getScales()
+                scales=scales
         )
 
     def _updateMatches(self):
@@ -357,7 +438,7 @@ class TransferAssignmentsGui(PluginGUIModule):
             return
 
         overwrite = (
-            self.getSettingsAsDict()[OVERWRITE]
+            self.overwriteCheckBox.isChecked()
         )
 
         AssignmentTransfer.copyAssignment(
@@ -373,7 +454,7 @@ class TransferAssignmentsGui(PluginGUIModule):
         count = (
             AssignmentTransfer.assignSinglyMatched(
                 self._matchResults,
-                overwrite=self.getSettingsAsDict()[OVERWRITE]
+                overwrite=self.overwriteCheckBox.isChecked()
             )
         )
 
@@ -386,7 +467,7 @@ class TransferAssignmentsGui(PluginGUIModule):
         count, unmatched = (
             AssignmentTransfer.assignAllToClosest(
                 self._matchResults,
-                overwrite=self.getSettingsAsDict()[OVERWRITE]
+                overwrite=self.overwriteCheckBox.isChecked()
             )
         )
 
