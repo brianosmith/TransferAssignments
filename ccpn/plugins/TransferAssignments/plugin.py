@@ -207,7 +207,7 @@ class TransferAssignmentsGui(PluginGUIModule):
         for sourcePeak, matches in matchResults.items():
             rows.append({
                 'Serial': sourcePeak.serial,
-                'Assignment':
+                'Assignment': #TODO should be some summary assignment string or separate columns per dim
                     sourcePeak.annotation,
                 'Matches':
                     len(matches),
@@ -238,7 +238,7 @@ class TransferAssignmentsGui(PluginGUIModule):
             rows.append({
                 'Serial':
                     match.targetPeak.serial,
-                'Assignment':
+                'Assignment': #TODO should be some summary assignment string or separate columns per dim
                     match.targetPeak.annotation,
                 'Distance':
                     round(match.distance, 4),
