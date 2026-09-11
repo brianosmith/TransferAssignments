@@ -7,10 +7,13 @@ from ccpn.api import PluginBase, PluginGUIModule
 
 import ccpn.ui.gui.widgets.PulldownListsForObjects as objectPulldowns
 import ccpn.ui.gui.widgets.CompoundWidgets as compoundWidget
+from ccpn.ui.gui.lib.StripLib import navigateToPositionInStrip, _getCurrentZoomRatio
+from ccpn.ui.gui.widgets.CompoundWidgets import CheckBoxCompoundWidget
 from ccpn.core.lib.peakUtils import getPeakAnnotation
 from ccpn.ui.gui.widgets.Label import Label
 from ccpn.ui.gui.widgets.Button import Button
 from ccpn.ui.gui.widgets.Frame import Frame
+from ccpn.ui.gui.widgets.SettingsWidgets import SpectrumDisplaySelectionWidget
 from ccpn.ui.gui.widgets.Splitter import Splitter
 from ccpn.ui.gui.widgets.table.Table import Table
 from ccpn.ui.gui.widgets.CheckBox import CheckBox
@@ -188,6 +191,57 @@ class TransferAssignmentsGui(PluginGUIModule):
 
         row = 0
 
+        texts = ['> select-to-add <', '<Use all>'] + [display.pid for display in self.application.ui.mainWindow.spectrumDisplays]
+        self.displaySelectionWidget = SpectrumDisplaySelectionWidget(parent=self.settingsWidget, mainWindow=self.mainWindow,
+                                                                     grid=(row, 0), gridSpan=(1, 1),
+                                                                     labelText='Display(s)', texts=texts
+                                                                     )
+        row += 1
+        self.markPositionCheckbox = CheckBoxCompoundWidget(parent=self.settingsWidget,
+                                                                          grid=(row, 0), vAlign='top', stretch=(0, 0), hAlign='left',
+                                                                          orientation='left',
+                                                                          labelText='Mark Positions',
+                                                                          checked=False,
+                                                                          )
+
+        row += 1
+        self.clearMarksCheckbox = CheckBoxCompoundWidget(parent=self.settingsWidget,
+                                                                        grid=(row, 0), vAlign='top', stretch=(0, 0), hAlign='left',
+                                                                        orientation='left',
+                                                                        labelText='Auto Clear Marks',
+                                                                        tipText='Auto clear all previous marks',
+                                                                        checked=False,
+                                                                        )
+
+        row += 1
+
+        self.overwriteCheckBox = CheckBox(
+            self.settingsWidget,
+            checked=False,
+            grid=(row, 1)
+        )
+
+        Label(
+            self.settingsWidget,
+            text='Overwrite Assignments',
+            grid=(row, 0)
+        )
+
+        row += 1
+
+        self.onlyGoodCheckBox = CheckBox(
+            self.settingsWidget,
+            checked=True,
+            grid=(row, 1)
+        )
+
+        Label(
+            self.settingsWidget,
+            text='Only Good Matches',  # V2 hangover - filter for the targets table?
+            grid=(row, 0)
+        )
+        row += 1
+
         Label(
             self.settingsWidget,
             text='1H Scale',
@@ -228,33 +282,7 @@ class TransferAssignmentsGui(PluginGUIModule):
             grid=(row, 1)
         )
 
-        row += 1
 
-        self.overwriteCheckBox = CheckBox(
-            self.settingsWidget,
-            checked=False,
-            grid=(row, 1)
-        )
-
-        Label(
-            self.settingsWidget,
-            text='Overwrite Assignments',
-            grid=(row, 0)
-        )
-
-        row += 1
-
-        self.onlyGoodCheckBox = CheckBox(
-            self.settingsWidget,
-            checked=True,
-            grid=(row, 1)
-        )
-
-        Label(
-            self.settingsWidget,
-            text='Only Good Matches', #V2 hangover - filter for the targets table?
-            grid=(row, 0)
-        )
 
     def updateSourceTable(self, matchResults):
         rows = []
@@ -344,12 +372,12 @@ class TransferAssignmentsGui(PluginGUIModule):
 
         self._selectedSourcePeak = sourcePeak
 
+        self._navigateToPeak(sourcePeak)
+
         matches = self._matchResults.get(
             sourcePeak,
             []
         )
-
-        #TODO clear marks and mark and focus display(s) on self._selectedSourcePeak
 
         self._populateTargetTable(matches)
 
@@ -379,6 +407,45 @@ class TransferAssignmentsGui(PluginGUIModule):
         ]
 
         #TODO clear marks and mark self._selectedSourcePeak and self._selectedTargetPeak
+
+    def _navigateToPeak(self, peak):
+
+        if peak is None:
+            return
+
+        if self.clearMarksCheckbox.isChecked():
+            self.mainWindow.clearMarks()
+
+        displays = (
+            self.displaySelectionWidget.getDisplays()
+        )
+
+        strips = [
+            strip
+            for display in displays
+            for strip in display.strips
+        ]
+
+        strips = strips or [self.current.strip]
+
+        for strip in strips:
+
+            widths = None
+
+            if peak.peakList.spectrum.dimensionCount <= 2:
+                widths = _getCurrentZoomRatio(
+                    strip.viewRange()
+                )
+
+            navigateToPositionInStrip(
+                strip=strip,
+                positions=peak.position,
+                axisCodes=peak.axisCodes,
+                widths=widths,
+                markPositions=
+                self.markPositionCheckbox.isChecked()
+            )
+
 
     def _updateStatistics(self):
         total = len(self._matchResults)

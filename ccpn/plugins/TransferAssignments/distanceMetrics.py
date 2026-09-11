@@ -24,6 +24,6 @@ def peakDistance(sourcePeak,
 
         scale = scales.get(isotopeCode, 1.0)
 
-        total += ((sourcePos - targetPos) / scale) ** 2
+        total += ((sourcePos - targetPos) * scale) ** 2
 
     return math.sqrt(total)
