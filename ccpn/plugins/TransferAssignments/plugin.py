@@ -323,8 +323,7 @@ class TransferAssignmentsGui(PluginGUIModule):
 
         self._updateStatistics()
 
-    def _populateTargetTable(self,
-                             peakMatches):
+    def _populateTargetTable(self, peakMatches):
 
         rows = []
         ndims = self.targetPeakList.spectrum.dimensionCount
