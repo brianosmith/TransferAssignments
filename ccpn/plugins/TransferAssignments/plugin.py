@@ -24,7 +24,6 @@ from ccpn.api import getApplication, getLogger
 from .matchingEngine import MatchingEngine
 from .assignmentTransfer import AssignmentTransfer
 
-
 SettingsWidgetFixedWidths = (180, 300, 200)
 
 SOURCE_PEAKLIST = 'SOURCE_PEAKLIST'
@@ -49,7 +48,6 @@ class TransferAssignmentsGui(PluginGUIModule):
 
         self._buildSettingsWidgets()
         self._buildResultsArea()
-
 
     def getWidgetDefinitions(self):
         '''The settings for the widgets that appear at the top of the module. Currently no management of the layout
@@ -100,11 +98,10 @@ class TransferAssignmentsGui(PluginGUIModule):
             ))
         )
 
-
     def _buildResultsArea(self):
         '''Main widget area with peak tables and action buttons'''
 
-        #row = self.mainWidget.layout().rowCount()
+        # row = self.mainWidget.layout().rowCount()
         row = 10
 
         self.resultsFrame = Frame(
@@ -120,7 +117,7 @@ class TransferAssignmentsGui(PluginGUIModule):
             self.resultsFrame,
             text='Refresh Matches',
             callback=self._refreshMatches,
-            grid=(r,0)
+            grid=(r, 0)
         )
 
         r += 1
@@ -191,27 +188,29 @@ class TransferAssignmentsGui(PluginGUIModule):
 
         row = 0
 
-        texts = ['> select-to-add <', '<Use all>'] + [display.pid for display in self.application.ui.mainWindow.spectrumDisplays]
-        self.displaySelectionWidget = SpectrumDisplaySelectionWidget(parent=self.settingsWidget, mainWindow=self.mainWindow,
+        texts = ['> select-to-add <', '<Use all>'] + [display.pid for display in
+                                                      self.application.ui.mainWindow.spectrumDisplays]
+        self.displaySelectionWidget = SpectrumDisplaySelectionWidget(parent=self.settingsWidget,
+                                                                     mainWindow=self.mainWindow,
                                                                      grid=(row, 0), gridSpan=(1, 1),
                                                                      labelText='Display(s)', texts=texts
                                                                      )
         row += 1
         self.markPositionCheckbox = CheckBoxCompoundWidget(parent=self.settingsWidget,
-                                                                          grid=(row, 0), vAlign='top', stretch=(0, 0), hAlign='left',
-                                                                          orientation='left',
-                                                                          labelText='Mark Positions',
-                                                                          checked=True,
-                                                                          )
+                                                           grid=(row, 0), vAlign='top', stretch=(0, 0), hAlign='left',
+                                                           orientation='left',
+                                                           labelText='Mark Positions',
+                                                           checked=True,
+                                                           )
 
         row += 1
         self.clearMarksCheckbox = CheckBoxCompoundWidget(parent=self.settingsWidget,
-                                                                        grid=(row, 0), vAlign='top', stretch=(0, 0), hAlign='left',
-                                                                        orientation='left',
-                                                                        labelText='Auto Clear Marks',
-                                                                        tipText='Auto clear all previous marks',
-                                                                        checked=True,
-                                                                        )
+                                                         grid=(row, 0), vAlign='top', stretch=(0, 0), hAlign='left',
+                                                         orientation='left',
+                                                         labelText='Auto Clear Marks',
+                                                         tipText='Auto clear all previous marks',
+                                                         checked=True,
+                                                         )
 
         row += 1
 
@@ -281,8 +280,6 @@ class TransferAssignmentsGui(PluginGUIModule):
             value=0.2,
             grid=(row, 1)
         )
-
-
 
     def updateSourceTable(self, matchResults):
         rows = []
@@ -406,7 +403,7 @@ class TransferAssignmentsGui(PluginGUIModule):
             self._selectedTargetPeak
         ]
 
-        #TODO clear marks and mark self._selectedSourcePeak and self._selectedTargetPeak
+        # TODO clear marks and mark self._selectedSourcePeak and self._selectedTargetPeak
 
     def _navigateToPeak(self, peak):
 
@@ -446,7 +443,6 @@ class TransferAssignmentsGui(PluginGUIModule):
                 self.markPositionCheckbox.isChecked()
             )
 
-
     def _updateStatistics(self):
         total = len(self._matchResults)
 
@@ -464,9 +460,6 @@ class TransferAssignmentsGui(PluginGUIModule):
             f'Unmatched: {unmatched}'
         )
 
-
-
-
     def _peakListsChanged(self, *args):
 
         settings = self.getSettingsAsDict()
@@ -480,7 +473,6 @@ class TransferAssignmentsGui(PluginGUIModule):
         '''Called by the Refresh matches button. Probably superfluous: just call _updateMatches()'''
 
         self._updateMatches()
-
 
     def _calculateMatches(self):
         if not self.sourcePeakList or not self.targetPeakList:
@@ -499,10 +491,10 @@ class TransferAssignmentsGui(PluginGUIModule):
         }
 
         return self.plugin.matchEngine.findMatches(
-                self.sourcePeakList,
-                self.targetPeakList,
-                isotopeCodes,
-                scales=scales
+            self.sourcePeakList,
+            self.targetPeakList,
+            isotopeCodes,
+            scales=scales
         )
 
     def _updateMatches(self):
@@ -573,11 +565,9 @@ class TransferAssignmentsGui(PluginGUIModule):
         )
 
 
-
 class TransferAssignmentsPlugin(PluginBase):
 
     def __init__(self, descriptor, application):
-
         super().__init__(descriptor, application)
 
         self.project = application.project
@@ -585,4 +575,3 @@ class TransferAssignmentsPlugin(PluginBase):
         self.ui = TransferAssignmentsGui
 
         self.matchEngine = MatchingEngine()
-
