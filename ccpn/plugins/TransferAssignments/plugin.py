@@ -201,7 +201,7 @@ class TransferAssignmentsGui(PluginGUIModule):
                                                                           grid=(row, 0), vAlign='top', stretch=(0, 0), hAlign='left',
                                                                           orientation='left',
                                                                           labelText='Mark Positions',
-                                                                          checked=False,
+                                                                          checked=True,
                                                                           )
 
         row += 1
@@ -210,7 +210,7 @@ class TransferAssignmentsGui(PluginGUIModule):
                                                                         orientation='left',
                                                                         labelText='Auto Clear Marks',
                                                                         tipText='Auto clear all previous marks',
-                                                                        checked=False,
+                                                                        checked=True,
                                                                         )
 
         row += 1
