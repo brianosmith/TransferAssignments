@@ -2,7 +2,7 @@ import math
 
 
 DEFAULT_SCALES = {
-    '1H': 0.02,
+    '1H': 1.0,
     '15N': 0.2,
     '13C': 0.2,
 }

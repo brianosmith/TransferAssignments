@@ -7,6 +7,7 @@ from ccpn.api import PluginBase, PluginGUIModule
 
 import ccpn.ui.gui.widgets.PulldownListsForObjects as objectPulldowns
 import ccpn.ui.gui.widgets.CompoundWidgets as compoundWidget
+from ccpn.core.lib.peakUtils import getPeakAnnotation
 from ccpn.ui.gui.widgets.Label import Label
 from ccpn.ui.gui.widgets.Button import Button
 from ccpn.ui.gui.widgets.Frame import Frame
@@ -46,7 +47,60 @@ class TransferAssignmentsGui(PluginGUIModule):
         self._buildSettingsWidgets()
         self._buildResultsArea()
 
+
+    def getWidgetDefinitions(self):
+        '''The settings for the widgets that appear at the top of the module. Currently no management of the layout
+        Plugin automatic construction style'''
+
+        return od((
+
+            (
+                SOURCE_PEAKLIST,
+                {
+                    'label': 'Source PeakList',
+                    'type': objectPulldowns.PeakListPulldown,
+                    'callBack': self._peakListsChanged,
+                    'kwds': {
+                        'labelText': 'Source PeakList',
+                        'showSelectName': True,
+                        'objectName': SOURCE_PEAKLIST,
+                        'fixedWidths': SettingsWidgetFixedWidths,
+                    }
+                }
+            ),
+
+            (
+                TARGET_PEAKLIST,
+                {
+                    'label': 'Target PeakList',
+                    'type': objectPulldowns.PeakListPulldown,
+                    'callBack': self._peakListsChanged,
+                    'kwds': {
+                        'labelText': 'Target PeakList',
+                        'showSelectName': True,
+                        'objectName': TARGET_PEAKLIST,
+                        'fixedWidths': SettingsWidgetFixedWidths,
+                    }
+                }
+            ),
+
+            (
+                DISTANCE_THRESHOLD,
+                {
+                    'label': 'Distance Threshold',
+                    'type': compoundWidget.DoubleSpinBoxCompoundWidget,
+                    'kwds': {
+                        'labelText': 'Distance',
+                        'value': 0.1,
+                    }
+                }
+            ))
+        )
+
+
     def _buildResultsArea(self):
+        '''Main widget area with peak tables and action buttons'''
+
         #row = self.mainWidget.layout().rowCount()
         row = 10
 
@@ -130,6 +184,7 @@ class TransferAssignmentsGui(PluginGUIModule):
         )
 
     def _buildSettingsWidgets(self):
+        '''Settings (cog) widgets'''
 
         row = 0
 
@@ -141,7 +196,7 @@ class TransferAssignmentsGui(PluginGUIModule):
 
         self.hScaleSpinBox = DoubleSpinbox(
             self.settingsWidget,
-            value=0.02,
+            value=1.0,
             grid=(row, 1)
         )
 
@@ -197,31 +252,45 @@ class TransferAssignmentsGui(PluginGUIModule):
 
         Label(
             self.settingsWidget,
-            text='Only Good Matches',
+            text='Only Good Matches', #V2 hangover - filter for the targets table?
             grid=(row, 0)
         )
 
     def updateSourceTable(self, matchResults):
         rows = []
+        ndims = self.sourcePeakList.spectrum.dimensionCount
 
         for sourcePeak, matches in matchResults.items():
-            rows.append({
+            row = {
                 'Serial': sourcePeak.serial,
-                'Assignment': #TODO should be some summary assignment string or separate columns per dim
-                    sourcePeak.annotation,
-                'Matches':
-                    len(matches),
-                'Closest':
-                    matches[0].distance
-                    if matches else None,
-                'Best Match':
-                    matches[0].targetPeak.serial
-                    if matches else None,
-                '_object': sourcePeak,
-                '_peakPid': sourcePeak.pid,
+                'Matches': len(matches),
+            }
+
+            row.update({
+                f'Ass D{dim + 1}':
+                    getPeakAnnotation(sourcePeak, dim)
+                for dim in range(ndims)
             })
 
+            row['Closest'] = (
+                matches[0].distance
+                if matches else None
+            )
+
+            row['Best Match'] = (
+                matches[0].targetPeak.serial
+                if matches else None
+            )
+
+            row.update({
+                '_object': sourcePeak,
+                '_peakPid': sourcePeak.pid
+            })
+
+            rows.append(row)
+
         df = pd.DataFrame(rows)
+        df['Best Match'] = df['Best Match'].astype('Int64')
 
         self.sourceTable.updateDf(df)
 
@@ -233,18 +302,27 @@ class TransferAssignmentsGui(PluginGUIModule):
                              peakMatches):
 
         rows = []
+        ndims = self.targetPeakList.spectrum.dimensionCount
 
         for match in peakMatches:
-            rows.append({
-                'Serial':
-                    match.targetPeak.serial,
-                'Assignment': #TODO should be some summary assignment string or separate columns per dim
-                    match.targetPeak.annotation,
+            row = {
+                'Serial': match.targetPeak.serial,
                 'Distance':
-                    round(match.distance, 4),
-                '_object': match,
+                    round(match.distance, 4)
+            }
+
+            row.update({
+                f'Ass D{dim + 1}':
+                    getPeakAnnotation(match.targetPeak, dim)
+                for dim in range(ndims)
+            })
+
+            row.update({
+                '_object': match.targetPeak,
                 '_peakPid': match.targetPeak.pid
             })
+
+            rows.append(row)
 
         df = pd.DataFrame(rows)
 
@@ -291,12 +369,9 @@ class TransferAssignmentsGui(PluginGUIModule):
 
         row = selection.iloc[0]
 
-        peakMatch = row['_object']
+        targetPeak = row['_object']
 
-        self._selectedTargetPeak = (
-            peakMatch.targetPeak
-        )
-
+        self._selectedTargetPeak = targetPeak
 
         self.application.current.peaks = [
             self._selectedSourcePeak,
@@ -324,57 +399,6 @@ class TransferAssignmentsGui(PluginGUIModule):
 
 
 
-    def getWidgetDefinitions(self):
-        '''The settings for the widgets that appear at the top of the module. Currently no management of the layout
-        Plugin automatic construction style'''
-
-        return od((
-
-            (
-                SOURCE_PEAKLIST,
-                {
-                    'label': 'Source PeakList',
-                    'type': objectPulldowns.PeakListPulldown,
-                    'callBack': self._peakListsChanged,
-                    'kwds': {
-                        'labelText': 'Source PeakList',
-                        'showSelectName': True,
-                        'objectName': SOURCE_PEAKLIST,
-                        'fixedWidths': SettingsWidgetFixedWidths,
-                    }
-                }
-            ),
-
-            (
-                TARGET_PEAKLIST,
-                {
-                    'label': 'Target PeakList',
-                    'type': objectPulldowns.PeakListPulldown,
-                    'callBack': self._peakListsChanged,
-                    'kwds': {
-                        'labelText': 'Target PeakList',
-                        'showSelectName': True,
-                        'objectName': TARGET_PEAKLIST,
-                        'fixedWidths': SettingsWidgetFixedWidths,
-                    }
-                }
-            ),
-
-            (
-                DISTANCE_THRESHOLD,
-                {
-                    'label': 'Distance Threshold',
-                    'type': compoundWidget.DoubleSpinBoxCompoundWidget,
-                    'kwds': {
-                        'labelText': 'Distance',
-                        'value': 0.1,
-                    }
-                }
-            ))
-        )
-
-
-
 
     def _peakListsChanged(self, *args):
 
@@ -386,6 +410,7 @@ class TransferAssignmentsGui(PluginGUIModule):
         self._updateMatches()
 
     def _refreshMatches(self, *args):
+        '''Called by the Refresh matches button. Probably superfluous: just call _updateMatches()'''
 
         self._updateMatches()
 
