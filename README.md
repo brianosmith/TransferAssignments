@@ -1,5 +1,5 @@
 # TransferAssignments
-CCPN V3 plugin to replicate V2 Copy Peak Assignments between peak lists workflow
+CCPN V3 plugin to replicate V2 Copy Assignments between peak lists workflow
 
 See https://sites.google.com/site/ccpnwiki/home/documentation/ccpnmr-analysis/popup-reference/assignment-copy-assignments 
 for the inspiration although not all features have been re-implemented.
